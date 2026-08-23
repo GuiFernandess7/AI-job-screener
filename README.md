@@ -5,6 +5,10 @@ Go monorepo with two services isolated as separate modules:
 - `services/function`: HTTP function responsible for the initial capture of job postings.
 - `services/worker`: batch worker responsible for screening and notification.
 
+## Demo
+
+https://github.com/user-attachments/assets/88f62a04-6791-4d96-a33c-87dec536fbbb
+
 The repository uses Go Workspaces (`go.work`, Go 1.25) for joint development, but each service keeps its own `go.mod`, dependencies and deploy pipeline.
 
 ## Structure
