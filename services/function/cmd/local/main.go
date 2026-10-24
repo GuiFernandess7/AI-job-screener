@@ -15,7 +15,7 @@ func main() {
 	}
 
 	hostname := ""
-	if os.Getenv("LOCAL_ONLY") == "true" { // for testing
+	if os.Getenv("LOCAL_ONLY") == "true" { 
 		hostname = "127.0.0.1"
 	}
 
