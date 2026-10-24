@@ -26,4 +26,8 @@ jobs:
       - uses: google-github-actions/setup-gcloud@v2
 
       - name: Deploy Worker via Cloud Build
-        run: gcloud builds submit --project ${{ vars.GCP_PROJECT_ID }} --config deploy/worker.cloudbuild.yaml .
+        run: |
+          gcloud builds submit --project ${{ vars.GCP_PROJECT_ID }} \
+            --config deploy/worker.cloudbuild.yaml \
+            --substitutions=COMMIT_SHA=${{ github.sha }} \
+            .
