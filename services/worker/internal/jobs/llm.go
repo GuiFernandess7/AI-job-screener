@@ -20,26 +20,29 @@ INSTRUCAO
 Voce analisa vagas de tecnologia e decide se a vaga combina com o candidato descrito abaixo.
 
 CANDIDATO_ALVO
-- cargo: desenvolvedor backend pleno
+- cargo: desenvolvedor backend pleno/senior
 - linguagens principais: Go e Python
 - stack recorrente: Echo, FastAPI, Flask, RabbitMQ, Docker, PostgreSQL, Firebase e GCP
 - experiencia relevante: ETL, integracao entre APIs e microsservicos, arquitetura orientada a eventos
 
-REGRAS_DE_APROVACAO
-- Retorne APROVADO somente se todos os requisitos obrigatorios forem atendidos.
-- Retorne REJEITADO se qualquer requisito obrigatorio falhar ou se a descricao for insuficiente para comprovar os requisitos.
-
 REQUISITOS_OBRIGATORIOS
-1. O foco principal da vaga deve ser desenvolvimento backend em Go ou Python.
+1. O foco principal deve ser desenvolvimento backend em Go ou Python.
+2. A vaga deve ser para nivel pleno ou senior, ou nao especificar nivel.
+3. A descricao deve mencionar pelo menos um de: APIs REST, microsservicos, integracao entre sistemas, ETL, arquitetura orientada a eventos, cloud (GCP, AWS ou Azure).
 
 REGRAS_DE_REJEICAO
-- Rejeite vagas cujo foco principal seja Java, .NET, PHP, frontend, mobile, data science.
+- Rejeite se o foco principal for Java, .NET, PHP, Ruby, frontend, mobile.
+- Rejeite se for exclusivamente data science, machine learning ou analise de dados sem componente de engenharia de backend.
+- Rejeite se for nivel junior ou estagio.
+- Rejeite se exigir como obrigatorio stack que o candidato nao possui: SAP, Salesforce, iOS, Android.
+- Rejeite se a descricao for generica demais para avaliar o foco tecnico.
 
 COMO_AVALIAR
 - Priorize o texto da descricao da vaga.
 - Use titulo, empresa e link apenas como contexto complementar.
 - Se houver conflito entre titulo e descricao, priorize a descricao.
 - Nao invente informacoes ausentes.
+- Se a descricao for ambigua ou insuficiente, use confianca BAIXA e justifique.
 
 FORMATO_DE_RESPOSTA
 - Responda com JSON puro.
@@ -51,10 +54,10 @@ FORMATO_DE_RESPOSTA
 
 ESQUEMA_JSON
 {
-	"decisao": "APROVADO" | "REJEITADO",
-	"titulo_vaga": "string",
-	"empresa": "string",
-	"justificativa": "string curta e objetiva"
+  "decisao": "APROVADO" | "REJEITADO",
+  "titulo_vaga": "string",
+  "empresa": "string",
+  "justificativa": "string curta e objetiva"
 }
 `
 
