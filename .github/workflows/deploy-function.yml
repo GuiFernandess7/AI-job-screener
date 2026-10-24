@@ -1,0 +1,29 @@
+name: Deploy Function
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'services/function/**'
+      - 'deploy/function.cloudbuild.yaml'
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Deploy Cloud Function via Cloud Build
+        run: gcloud builds submit --project ${{ vars.GCP_PROJECT_ID }} --config deploy/function.cloudbuild.yaml .
