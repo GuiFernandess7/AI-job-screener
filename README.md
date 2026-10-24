@@ -177,3 +177,7 @@ gcloud secrets versions add DISCORD_WEBHOOK_URL --data-file=-
 ```
 
 Secret names can be changed via `_DATABASE_URL_SECRET`, `_LLM_API_KEY_SECRET` and `_DISCORD_WEBHOOK_SECRET`.
+
+# UPDATE
+
+- CI/CD added
