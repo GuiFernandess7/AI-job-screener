@@ -29,6 +29,7 @@ REQUISITOS_OBRIGATORIOS
 1. O foco principal deve ser desenvolvimento backend em Go ou Python.
 2. A vaga deve ser para nivel pleno ou senior, ou nao especificar nivel.
 3. A descricao deve mencionar pelo menos um de: APIs REST, microsservicos, integracao entre sistemas, ETL, arquitetura orientada a eventos, cloud (GCP, AWS ou Azure).
+4. A vaga deve ser remoto. Se não houver informação encontrada sobre disponibilidade, pode considerar.
 
 REGRAS_DE_REJEICAO
 - Rejeite se o foco principal for Java, .NET, PHP, Ruby, frontend, mobile.
