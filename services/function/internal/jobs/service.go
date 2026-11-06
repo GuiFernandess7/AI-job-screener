@@ -89,7 +89,11 @@ func (s *Service) runCapture(requestID string, terms []string) {
 
 	jobs, err := s.scraper.GetJobIDsFromLinkedIn(context.Background(), terms)
 	if err != nil {
-		logger.Error("job capture failed", "error", err)
+		logger.Error("job capture encountered errors", "error", err, "captured_jobs", len(jobs))
+	}
+
+	if len(jobs) == 0 {
+		logger.Warn("job capture finished with no jobs captured")
 		return
 	}
 

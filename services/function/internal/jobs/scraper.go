@@ -10,12 +10,14 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 )
 
 const linkedInGuestSearchURL = "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search"
 const linkedInRetryAttempts = 3
+const linkedInRateLimitBaseDelay = 15 * time.Second
 
 const browserUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36"
 
@@ -53,36 +55,57 @@ func NewLinkedInScraper(logger *slog.Logger) *LinkedInScraper {
 func (s *LinkedInScraper) GetJobIDsFromLinkedIn(ctx context.Context, terms []string) ([]CapturedJob, error) {
 	jobs := make([]CapturedJob, 0)
 	seen := make(map[string]struct{})
+	var failedTerms []string
+	var errs []error
+	rateLimited := false
 
 	for index, term := range terms {
 		s.logger.Info("linkedin term processing started", "term", term)
 		termJobs, err := s.fetchTermJobs(ctx, term)
 		if err != nil {
-			s.logger.Error("linkedin term processing failed", "term", term, "error", err)
-			return nil, err
-		}
-
-		for _, job := range termJobs {
-			key := job.ID + "|" + job.SearchTerm
-			if _, exists := seen[key]; exists {
-				continue
+			if ctx.Err() != nil {
+				return jobs, ctx.Err()
 			}
 
-			seen[key] = struct{}{}
-			jobs = append(jobs, job)
-		}
+			s.logger.Error("linkedin term processing failed", "term", term, "error", err)
+			failedTerms = append(failedTerms, term)
+			errs = append(errs, err)
+			if isLinkedInRateLimitError(err) {
+				rateLimited = true
+			}
+		} else {
+			for _, job := range termJobs {
+				key := job.ID + "|" + job.SearchTerm
+				if _, exists := seen[key]; exists {
+					continue
+				}
 
-		s.logger.Info("linkedin term processing finished", "term", term, "jobs_found", len(termJobs))
+				seen[key] = struct{}{}
+				jobs = append(jobs, job)
+			}
+
+			s.logger.Info("linkedin term processing finished", "term", term, "jobs_found", len(termJobs))
+		}
 
 		if index < len(terms)-1 {
 			// Jitter reduces the chance of repeating the same timing signature between requests.
+			// Back off harder for the remaining terms once we've already been rate limited once.
 			delay := time.Duration(4+s.rand.Intn(6)) * time.Second
+			if rateLimited {
+				delay += linkedInRateLimitBaseDelay
+			}
+
 			select {
 			case <-ctx.Done():
-				return nil, ctx.Err()
+				return jobs, ctx.Err()
 			case <-time.After(delay):
 			}
 		}
+	}
+
+	if len(failedTerms) > 0 {
+		s.logger.Warn("linkedin term processing partially failed", "failed_terms", failedTerms, "jobs_found", len(jobs))
+		return jobs, fmt.Errorf("linkedin jobs request failed for terms %v: %w", failedTerms, errors.Join(errs...))
 	}
 
 	return jobs, nil
@@ -132,12 +155,13 @@ func (s *LinkedInScraper) fetchTermJobs(ctx context.Context, term string) ([]Cap
 		if resp.StatusCode != http.StatusOK {
 			lastErr = fmt.Errorf("linkedin jobs request for %q returned status %d", term, resp.StatusCode)
 			s.logger.Warn("linkedin request returned non-200 status", "term", term, "attempt", attempt, "url", requestURL, "status", resp.StatusCode)
-			if attempt < linkedInRetryAttempts && resp.StatusCode >= http.StatusInternalServerError {
-				s.logger.Info("linkedin status retry scheduled", "term", term, "attempt", attempt, "url", requestURL)
+			if attempt < linkedInRetryAttempts && isRetryableLinkedInStatus(resp.StatusCode) {
+				delay := linkedInStatusRetryDelay(resp.StatusCode, attempt, resp.Header)
+				s.logger.Info("linkedin status retry scheduled", "term", term, "attempt", attempt, "url", requestURL, "delay", delay)
 				select {
 				case <-ctx.Done():
 					return nil, ctx.Err()
-				case <-time.After(time.Duration(attempt) * 2 * time.Second):
+				case <-time.After(delay):
 				}
 				continue
 			}
@@ -151,6 +175,50 @@ func (s *LinkedInScraper) fetchTermJobs(ctx context.Context, term string) ([]Cap
 	}
 
 	return nil, fmt.Errorf("request linkedin jobs for %q: %w", term, lastErr)
+}
+
+func isRetryableLinkedInStatus(status int) bool {
+	return status == http.StatusTooManyRequests || status >= http.StatusInternalServerError
+}
+
+func isLinkedInRateLimitError(err error) bool {
+	return err != nil && strings.Contains(err.Error(), "status 429")
+}
+
+func linkedInStatusRetryDelay(status int, attempt int, headers http.Header) time.Duration {
+	if status == http.StatusTooManyRequests {
+		if retryAfter, ok := parseRetryAfter(headers.Get("Retry-After")); ok {
+			return retryAfter
+		}
+
+		return time.Duration(attempt) * linkedInRateLimitBaseDelay
+	}
+
+	return time.Duration(attempt) * 2 * time.Second
+}
+
+func parseRetryAfter(value string) (time.Duration, bool) {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return 0, false
+	}
+
+	if seconds, err := strconv.Atoi(value); err == nil {
+		if seconds < 0 {
+			return 0, false
+		}
+		return time.Duration(seconds) * time.Second, true
+	}
+
+	if when, err := time.Parse(http.TimeFormat, value); err == nil {
+		delay := time.Until(when)
+		if delay < 0 {
+			return 0, false
+		}
+		return delay, true
+	}
+
+	return 0, false
 }
 
 func isRetryableLinkedInError(err error) bool {

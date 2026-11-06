@@ -29,14 +29,14 @@ REQUISITOS_OBRIGATORIOS
 1. O foco principal deve ser desenvolvimento backend em Go ou Python.
 2. A vaga deve ser para nivel pleno ou senior, ou nao especificar nivel.
 3. A descricao deve mencionar pelo menos um de: APIs REST, microsservicos, integracao entre sistemas, ETL, arquitetura orientada a eventos, cloud (GCP, AWS ou Azure).
-4. A vaga deve ser remoto. Se não houver informação encontrada sobre disponibilidade, pode considerar.
 
 REGRAS_DE_REJEICAO
 - Rejeite se o foco principal for Java, .NET, PHP, Ruby, frontend, mobile.
 - Rejeite se for exclusivamente data science, machine learning ou analise de dados sem componente de engenharia de backend.
 - Rejeite se for nivel junior ou estagio.
-- Rejeite se exigir como obrigatorio stack que o candidato nao possui: SAP, Salesforce, iOS, Android.
+- Rejeite se exigir como obrigatorio stack que o candidato nao possui: Salesforce, iOS, Android.
 - Rejeite se a descricao for generica demais para avaliar o foco tecnico.
+- Rejeite se a vaga menciona a disponibilidade híbrida ou presencial.
 
 COMO_AVALIAR
 - Priorize o texto da descricao da vaga.
